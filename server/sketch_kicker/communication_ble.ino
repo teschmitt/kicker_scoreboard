@@ -1,4 +1,4 @@
-//#include <Preferences.h>
+/*#include <Preferences.h>
 //#include <WiFi.h>
 //#include <WiFiAP.h>
 //#include <ESPmDNS.h>
@@ -56,7 +56,6 @@ unsigned long lastStartDetected = 0;
 unsigned long lastObjectDetected = 0;
 
 int goals = 0;
-bool deviceConnected = false;
 
 BLEServer *pServer;
 BLEService *pService;
@@ -77,7 +76,7 @@ class GoalServerCallback: public BLEServerCallbacks {
 
 class GoalsCharacteristicCallbacks: public BLECharacteristicCallbacks{
   	void onRead(BLECharacteristic* pCharacteristic){
-      Serial.printf("Reading characteristic %d\n", pCharacteristic->getValue());
+      //Serial.printf("Reading characteristic %d\n", pCharacteristic->getValue());
     }
 	  void onWrite(BLECharacteristic* pCharacteristic){
        Serial.printf("Writing characteristic %s\n", pCharacteristic->toString());
@@ -110,7 +109,7 @@ void setup() {
   if (!failed) {
     //will set failed = true if something goes wrong
     connectToWifi();
-  }*/
+  }
 }
 
 void setupBle(){
@@ -128,7 +127,7 @@ void setupBle(){
 
   goalsDescriptor->setValue("Number of Goals");
   goalsCharacteristic->addDescriptor(goalsDescriptor);
-  goalsCharacteristic->setValue({goals});
+  goalsCharacteristic->setValue(goals);
   goalsCharacteristic->setCallbacks(new GoalsCharacteristicCallbacks());
 
  
@@ -183,6 +182,8 @@ void loop(){
     if(deviceConnected){
       //TODO: maybe something smarter, caching?
       Serial.println(F("Setting Value and notifying"));
+      goalsCharacteristic->setValue(goals);
+      Serial.printf("%d\n", goalsCharacteristic->getValue());
       goalsCharacteristic->notify();
     }
 
@@ -240,7 +241,7 @@ void getCredentialsFromInput() {
     }
     failed = true;
   }
-}*/
+}
 
 void dialoge(String message, String &saveTo) {
   Serial.println(message);
@@ -260,5 +261,5 @@ void dialoge(String message, String &saveTo) {
   // Check if credentials already available
   ssid = prefs.getString("ssid");
   password = prefs.getString("password");
-}*/
-
+}
+*/
