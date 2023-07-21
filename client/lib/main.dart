@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kicker_scoreboard/page/score_page.dart';
-import 'package:kicker_scoreboard/service/ble_service.dart';
+import 'package:kicker_scoreboard/service/ble_goals_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.teal,
       ),
       home: ScorePage(
-        bleService: BleService(),
+        bleService: BleGoalsService(),
       ),
     );
   }

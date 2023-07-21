@@ -1,3 +1,5 @@
+#ifdef USE_MQTT
+
 //for testing, run this on mac: /opt/homebrew/opt/mosquitto/sbin/mosquitto -c /opt/homebrew/etc/mosquitto/mosquitto.conf
 
 #include <Preferences.h>
@@ -233,9 +235,10 @@ void onMessageReceived(String message) {
   Serial.println(F("No message handler implemented!"));
 }
 
-void sendGoals(int goals) {
+void mqttSendGoals(int goals) {
   char buffer[1];
   buffer[0] = (char) goals;
   client.publish(goalsTopic, buffer);
 }
 
+#endif

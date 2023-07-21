@@ -10,6 +10,7 @@ dependencies:
 
   flutter_blue_plus: ^1.7.5
   mqtt_client: ^9.8.1
+  rxdart: ^0.27.7
 
 dev_dependencies:
   flutter_test:

@@ -1,3 +1,5 @@
+#define USE_BLE
+
 #ifndef SENSOR_CONNECTED
 #define SENSOR_CONNECTED true
 #endif
@@ -10,7 +12,7 @@ const int PIN_SENDER = GPIO_NUM_33;
 unsigned long lastMillis = 0;
 
 // thresholds & timers
-const int THRESHOLD_DETECT_OBJECT = 2;
+const int THRESHOLD_DETECT_OBJECT = 50;
 const int TIME_DETECT_OBJECT = 10;
 const int WAIT_AFTER_DETECTION = 2000;
 
@@ -30,11 +32,19 @@ void setup() {
 
   Serial.begin(115200);
 
+#ifdef USE_MQTT
   setupMqtt();
+#endif
+
+#ifdef USE_BLE
+  setupBle();
+#endif
 }
 
 void loop(){
+#ifdef USE_MQTT
   loopMqtt();
+#endif
   int pushButtonState = digitalRead(PIN_BUTTON);
   unsigned long ms = millis();
 
@@ -59,24 +69,27 @@ void loop(){
 
   unsigned int received = analogRead(PIN_RECEIVER);
 
-  if(received > THRESHOLD_DETECT_OBJECT && lastStartDetected == 0){
-    lastStartDetected = ms;
+  Serial.println(received);
+
+  if(received > THRESHOLD_DETECT_OBJECT /*&& lastStartDetected == 0*/){
+    onGoal(ms);
+    //lastStartDetected = ms;
     //Serial.printf("Over threshold (%d) -> lastStartDetected=%d\n", received, lastStartDetected);
   }
 
-  if(received <= THRESHOLD_DETECT_OBJECT && lastStartDetected > 0){
+ /*if(received <= THRESHOLD_DETECT_OBJECT && lastStartDetected > 0){
     lastStartDetected = 0;
     //Serial.println("Reset lastStartDetected");
   }
 
   if(lastStartDetected == 0){
     return;
-  }
+  }*/
 
   //Serial.printf("Time since last start detected: %d\n", ms - lastStartDetected);
-  if(ms - lastStartDetected > TIME_DETECT_OBJECT){
+  /*if(ms - lastStartDetected > TIME_DETECT_OBJECT){
     onGoal(ms);
-  }
+  }*/
 
   //Serial.printf("Received through reader: %d\n", received);
 }
@@ -84,12 +97,16 @@ void loop(){
 void onGoal(unsigned long timestamp){
   goals++;
   Serial.printf("Goal! %d - 0\n", goals);
-  //TODO: on object detected
 
   if(clientConnected){
     Serial.println(F("Setting Value and notifying"));
-    sendGoals(goals);
-    //TODO: send/publish
+#ifdef USE_MQTT
+    mqttSendGoals(goals);
+#endif
+
+#ifdef USE_BLE
+    bleSendGoals(goals);
+#endif
   }
 
   lastStartDetected = 0;
