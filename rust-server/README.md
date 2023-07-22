@@ -2,6 +2,8 @@
 
 This project was created with the help of the [esp-idf-template](https://github.com/esp-rs/esp-idf-template) and mirrors the behavior of the [original server](../server/sketch_kicker/) ... just using Rust.
 
+BLE goal server is heavily inspired by [this example](https://github.com/taks/esp32-nimble/blob/develop/examples/ble_server.rs).
+
 ## Building
 
 Just follow the [Prereqs section](https://github.com/esp-rs/esp-idf-template#prerequisites) in the esp-idf-template repo and then:

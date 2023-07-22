@@ -18,27 +18,32 @@ pub(crate) struct KickerBLE<'a> {
 }
 
 impl KickerBLE<'_> {
-    pub(crate) fn new(service_uuid: &BleUuid) -> Self {
+    pub(crate) fn new(service_uuid: BleUuid) -> Self {
         let device = BLEDevice::take();
         let _server = device.get_server();
         // let mut client_connected = false;
-        let u = service_uuid.clone();
+
         _server
-            .on_connect(move |_| {
+            .on_connect(|_| {
                 info!("Client connected");
                 info!("Multi-connect support: start advertising");
                 // TBD: is this really necessary on connect of each client? Or rather once centrally during startup
                 device
                     .get_advertising()
-                    .scan_response(true)
-                    .add_service_uuid(u)
                     .start()
-                    .expect("Could not start advertising on device");
+                    .expect("Could not start advertising on device after connection");
             })
             .on_disconnect(|_| {
                 info!("Client disconnected");
             });
-        let service = _server.create_service(*service_uuid);
+        let service = _server.create_service(service_uuid);
+        device
+            .get_advertising()
+            .name("Goal server")
+            // .scan_response(true)
+            .add_service_uuid(service_uuid)
+            .start()
+            .expect("Could not start advertising on device");
         Self { _server, service }
     }
 }

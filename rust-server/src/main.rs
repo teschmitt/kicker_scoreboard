@@ -7,7 +7,7 @@ use esp_idf_hal::{
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::info;
-use std::time::{Duration, Instant};
+use std::{thread, time::Duration};
 
 mod ble_goal_monitor;
 
@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
     esp_idf_svc::log::EspLogger::initialize_default();
 
     // set up BLE
-    let kicker_ble = KickerBLE::new(&SERVICE_UUID);
+    let kicker_ble = KickerBLE::new(SERVICE_UUID);
     let goal_monitor = BLEGoalMonitor::new(kicker_ble, CHARACTERISTIC_UUID);
 
     let peripherals = Peripherals::take().unwrap();
@@ -36,19 +36,15 @@ fn main() -> anyhow::Result<()> {
     let mut goal_sensor: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio32, Atten11dB<_>> =
         AdcChannelDriver::new(peripherals.pins.gpio32)?;
 
-    let goals = 0;
-
-    let mut last_detected = Instant::now();
+    // persistent loop variables
+    let mut goals = 0;
 
     loop {
-        let now = Instant::now();
-        if now.duration_since(last_detected) < WAIT_AFTER_DETECTION {
-            continue;
-        }
         if adc.read(&mut goal_sensor)? > THRESHOLD_DETECT_OBJECT {
             info!("GOOOOOOOOAAAAL!");
+            goals += 1;
             goal_monitor.send(goals);
-            last_detected = now;
+            thread::sleep(WAIT_AFTER_DETECTION);
         };
     }
 }
