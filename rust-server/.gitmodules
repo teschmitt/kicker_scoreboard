@@ -1,0 +1,3 @@
+[submodule "esp-idf-ble"]
+	path = esp-idf-ble
+	url = git@github.com:pyaillet/esp-idf-ble.git
