@@ -46,7 +46,10 @@ fn main() -> anyhow::Result<()> {
         let read = adc.read(&mut goal_sensor)?;
         if read > THRESHOLD_DETECT_OBJECT {
             goals += 1;
-            info!("GOOOOOOOOAAAAL! {goals} -- Reading: {read}");
+            info!(
+                "GOOOOOOOOAAAAL! {goals} -- Reading: {read} -- sent to {} connected clients",
+                kicker_server.connected_count()
+            );
             kicker_server.send(goals);
             thread::sleep(WAIT_AFTER_DETECTION);
         };

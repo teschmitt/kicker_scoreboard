@@ -7,7 +7,6 @@ use log::{debug, info};
 use std::sync::Arc;
 
 // Stuff that's missing from original implementation:
-//   * no global clientConnected is set or unset on connection/disconnection
 //   * pAdvertising->setMinPreferred(0x06) interval is not set
 
 pub(crate) trait Server<T> {
@@ -22,7 +21,7 @@ pub(crate) struct BLEConfig {
 
 pub(crate) struct KickerBLE<'a> {
     // device: &'a mut BLEDevice,
-    _server: &'a mut BLEServer,
+    server: &'a mut BLEServer,
     goals_characteristic: Arc<Mutex<RawMutex, BLECharacteristic>>,
     _service: Arc<Mutex<RawMutex, BLEService>>,
 }
@@ -30,13 +29,13 @@ pub(crate) struct KickerBLE<'a> {
 impl Server<BLEConfig> for KickerBLE<'_> {
     fn new(config: BLEConfig) -> Self {
         let device = BLEDevice::take();
-        let _server = device.get_server();
+        let server = device.get_server();
         // let mut client_connected = false;
 
         // create server
-        _server
+        server
             .on_connect(|_| {
-                info!("Client connected. Multi-connect support: start advertising");
+                info!("Client connected");
                 device
                     .get_advertising()
                     .start()
@@ -47,7 +46,7 @@ impl Server<BLEConfig> for KickerBLE<'_> {
             });
 
         // create and advertise service
-        let _service = _server.create_service(config.service_uuid);
+        let _service = server.create_service(config.service_uuid);
 
         // create characteristic
         let goals_characteristic = _service.lock().create_characteristic(
@@ -70,7 +69,7 @@ impl Server<BLEConfig> for KickerBLE<'_> {
 
         Self {
             // device,
-            _server,
+            server,
             goals_characteristic,
             _service,
         }
@@ -81,5 +80,11 @@ impl Server<BLEConfig> for KickerBLE<'_> {
             .lock()
             .set_value(goals.to_string().as_bytes())
             .notify();
+    }
+}
+
+impl KickerBLE<'_> {
+    pub(crate) fn connected_count(self: &Self) -> usize {
+        self.server.connected_count()
     }
 }
