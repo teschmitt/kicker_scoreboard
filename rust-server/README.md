@@ -28,5 +28,5 @@ And that's it for now
 
 ## Todos
 
-- [ ] create GoalSender trait to abstract away method of sending goal events
+- [x] create GoalSender trait to abstract away method of sending goal events
 - [ ] implement MQTT goal monitor

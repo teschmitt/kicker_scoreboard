@@ -1,4 +1,3 @@
-use ble_goal_monitor::{BLEGoalMonitor, KickerBLE};
 use esp32_nimble::{utilities::BleUuid, uuid128};
 use esp_idf_hal::{
     adc::{config::Config, AdcChannelDriver, AdcDriver, Atten11dB},
@@ -7,9 +6,10 @@ use esp_idf_hal::{
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::info;
+use server::{BLEConfig, KickerBLE, Server};
 use std::{thread, time::Duration};
 
-mod ble_goal_monitor;
+mod server;
 
 // consts for BLE functionality
 const SERVICE_UUID: BleUuid = uuid128!("c03f245f-d01c-4886-850b-408bc53fe63a");
@@ -27,9 +27,12 @@ fn main() -> anyhow::Result<()> {
     esp_idf_svc::log::EspLogger::initialize_default();
 
     // set up BLE
-    let kicker_ble = KickerBLE::new(SERVICE_UUID);
-    let goal_monitor = BLEGoalMonitor::new(kicker_ble, CHARACTERISTIC_UUID);
+    let kicker_server = KickerBLE::new(BLEConfig {
+        service_uuid: SERVICE_UUID,
+        characteristic_uuid: CHARACTERISTIC_UUID,
+    });
 
+    // get the peripherals and set them up
     let peripherals = Peripherals::take().unwrap();
 
     let mut adc = AdcDriver::new(peripherals.adc1, &Config::new().calibration(true))?;
@@ -40,10 +43,11 @@ fn main() -> anyhow::Result<()> {
     let mut goals = 0;
 
     loop {
-        if adc.read(&mut goal_sensor)? > THRESHOLD_DETECT_OBJECT {
-            info!("GOOOOOOOOAAAAL!");
+        let read = adc.read(&mut goal_sensor)?;
+        if read > THRESHOLD_DETECT_OBJECT {
             goals += 1;
-            goal_monitor.send(goals);
+            info!("GOOOOOOOOAAAAL! {goals} -- Reading: {read}");
+            kicker_server.send(goals);
             thread::sleep(WAIT_AFTER_DETECTION);
         };
     }
