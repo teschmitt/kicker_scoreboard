@@ -30,3 +30,4 @@ And that's it for now
 
 - [x] create GoalSender trait to abstract away method of sending goal events
 - [ ] implement MQTT goal monitor
+- [ ] integrate LittleFS for config files that configure device communication (BLE, MQTT, etc.) at runtime with [littlefs2](https://lib.rs/crates/littlefs2) but [this](https://github.com/esp-rs/esp-idf-sys/pull/114#issuecomment-1207168854) seems to work as well.
