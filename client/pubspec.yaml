@@ -23,3 +23,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  fonts:
+    - family: ChivoMono
+      fonts:
+        - asset: assets/fonts/ChivoMono-VariableFont_wght.ttf
+        - asset: assets/fonts/ChivoMono-Italic-VariableFont_wght.ttf

@@ -7,6 +7,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:kicker_scoreboard/bloc/main_page/main_page_cubit.dart';
 import 'package:kicker_scoreboard/page/main_page.dart';
 import 'package:kicker_scoreboard/service/ble_goals_service.dart';
+import 'package:kicker_scoreboard/theme.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
@@ -60,9 +61,8 @@ class KickerScoreboardApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Scoreboard',
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-      ),
+      theme: ScoreboardTheme.light,
+      darkTheme: ScoreboardTheme.dark,
       home: BlocProvider<MainPageCubit>(
         create: (context) => MainPageCubit(),
         child: const MainPage(),

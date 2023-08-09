@@ -22,7 +22,7 @@ class MainPage extends StatelessWidget {
         } else if (state is MainPageConnected) {
           return BlocProvider<GoalsCubit>(
             create: (_) => GoalsCubit(BleGoalsService()),
-            child: const GoalsPageContent(),
+            child: GoalsPageContent(),
           );
         } else {
           return const IdlePageContent();

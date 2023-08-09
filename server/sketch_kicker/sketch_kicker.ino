@@ -4,20 +4,30 @@
 #define SENSOR_CONNECTED true
 #endif
 
+#ifndef USE_2_SENSORS
+#define USE_2_SENSORS false
+#endif
+
 // Pinout
 const int PIN_BUTTON = 0;
-const int PIN_RECEIVER = GPIO_NUM_32;
-const int PIN_SENDER = GPIO_NUM_33;
+
+const int PIN_RECEIVER_1 = GPIO_NUM_32;
+const int PIN_SENDER_1 = GPIO_NUM_33;
+
+const int PIN_RECEIVER_2 = GPIO_NUM_34;
+const int PIN_SENDER_2 = GPIO_NUM_35;
 
 unsigned long lastMillis = 0;
 
 // thresholds & timers
-const int THRESHOLD_DETECT_OBJECT = 50;
-const int TIME_DETECT_OBJECT = 10;
+const int THRESHOLD_DETECT_OBJECT = 10;
+const int DETECT_BUFFER_SIZE = 3;
 const int WAIT_AFTER_DETECTION = 2000;
 
 // goal detection
-unsigned long lastStartDetected = 0;
+unsigned int received1Buffer[DETECT_BUFFER_SIZE];
+unsigned int received2Buffer[DETECT_BUFFER_SIZE];
+
 unsigned long lastObjectDetected = 0;
 int goals = 0;
 
@@ -27,8 +37,14 @@ bool clientConnected = false;
 
 void setup() {
   pinMode(PIN_BUTTON, INPUT);
-  pinMode(PIN_RECEIVER, INPUT);
-  pinMode(PIN_SENDER, OUTPUT);
+
+  pinMode(PIN_RECEIVER_1, INPUT);
+  pinMode(PIN_SENDER_1, OUTPUT);
+
+  if(USE_2_SENSORS){
+    pinMode(PIN_RECEIVER_2, INPUT);
+    pinMode(PIN_SENDER_2, OUTPUT);
+  }
 
   Serial.begin(115200);
 
@@ -56,42 +72,42 @@ void loop(){
   }
 
   if(pushButtonState == HIGH){
-    digitalWrite(PIN_SENDER, HIGH);
+    digitalWrite(PIN_SENDER_1, HIGH);
+    if(USE_2_SENSORS){
+       digitalWrite(PIN_SENDER_2, HIGH);
+    }
   }else{
-    digitalWrite(PIN_SENDER, LOW);
+    digitalWrite(PIN_SENDER_1, LOW);
+    if(USE_2_SENSORS){
+       digitalWrite(PIN_SENDER_2, LOW);
+    }
   }
-
   
 
   if(ms - lastObjectDetected < WAIT_AFTER_DETECTION){
     return;
   }
 
-  unsigned int received = analogRead(PIN_RECEIVER);
-
-  Serial.println(received);
-
-  if(received > THRESHOLD_DETECT_OBJECT /*&& lastStartDetected == 0*/){
-    onGoal(ms);
-    //lastStartDetected = ms;
-    //Serial.printf("Over threshold (%d) -> lastStartDetected=%d\n", received, lastStartDetected);
+  unsigned int received1 = analogRead(PIN_RECEIVER_1);
+  updateBuffer(received1, received1Buffer, DETECT_BUFFER_SIZE);
+  if(USE_2_SENSORS){
+    unsigned int received2 = analogRead(PIN_RECEIVER_2);
+    updateBuffer(received2, received2Buffer, DETECT_BUFFER_SIZE);
   }
 
- /*if(received <= THRESHOLD_DETECT_OBJECT && lastStartDetected > 0){
-    lastStartDetected = 0;
-    //Serial.println("Reset lastStartDetected");
+  //Serial.println(received);
+
+  unsigned int avg1 = average(received1Buffer, DETECT_BUFFER_SIZE);
+  unsigned int avg2 = average(received2Buffer, DETECT_BUFFER_SIZE);
+
+  Serial.printf("avg1: %d\n", avg1);
+  if(USE_2_SENSORS){
+    Serial.printf("avg2: %d\n", avg2);
   }
 
-  if(lastStartDetected == 0){
-    return;
-  }*/
-
-  //Serial.printf("Time since last start detected: %d\n", ms - lastStartDetected);
-  /*if(ms - lastStartDetected > TIME_DETECT_OBJECT){
+  if(avg1 > THRESHOLD_DETECT_OBJECT || USE_2_SENSORS && avg2 > THRESHOLD_DETECT_OBJECT){
     onGoal(ms);
-  }*/
-
-  //Serial.printf("Received through reader: %d\n", received);
+  }
 }
 
 void onGoal(unsigned long timestamp){
@@ -109,6 +125,32 @@ void onGoal(unsigned long timestamp){
 #endif
   }
 
-  lastStartDetected = 0;
   lastObjectDetected = timestamp;
+}
+
+void initBuffers(){
+  for(int i=0; i<DETECT_BUFFER_SIZE; i++){
+    received1Buffer[i] = 0;
+    received2Buffer[i] = 0;
+  }
+}
+
+void updateBuffer(unsigned int value, unsigned int* array, int length){
+  for(int i=0; i<length-1; i++){
+    array[i+1] = array[i];
+  }
+  array[0] = value;
+  //Serial.printf("Buffer: %d, %d, %d\n", array[0], array[1], array[2]);
+}
+
+unsigned int average(unsigned int* array, int length){
+  int sum = 0;       
+  double avg;          
+
+   for (int i = 0; i < length; ++i) {
+      sum += array[i];
+   }
+   avg = double(sum) / length;
+
+   return int(avg);
 }
