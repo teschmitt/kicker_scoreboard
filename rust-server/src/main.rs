@@ -5,7 +5,7 @@ use esp_idf_hal::{
     peripherals::Peripherals,
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
-use log::info;
+use log::{error, info};
 use server::{BLEConfig, KickerBLE, Server};
 use std::{thread, time::Duration};
 
@@ -42,6 +42,9 @@ fn main() -> anyhow::Result<()> {
         characteristic_uuid: CHARACTERISTIC_UUID,
         mode_characteristic_uuid: MODE_CHARACTERISTIC_UUID,
     });
+    if kicker_server.create_characteristics().is_err() {
+        error!("Could not create required characteristics, so this will probably be the first of many errors")
+    }
 
     // get the peripherals and set them up
     let peripherals = Peripherals::take().unwrap();

@@ -1,9 +1,10 @@
+use anyhow::anyhow;
 use embedded_svc::utils::mutex::Mutex;
 use esp32_nimble::{
     utilities::{mutex::RawMutex, BleUuid},
     BLECharacteristic, BLEDevice, BLEServer, BLEService, DescriptorProperties, NimbleProperties,
 };
-use log::{debug, info};
+use log::{debug, error, info};
 use std::sync::Arc;
 
 // Stuff that's missing from original implementation:
@@ -61,15 +62,16 @@ impl Server<BLEConfig> for KickerBLE<'_> {
     }
 
     fn send(self: &Self, goals: &str) {
-        self.goals_characteristic
-            .lock()
-            .set_value(goals.as_bytes())
-            .notify();
+        if let Some(g) = self.goals_characteristic.as_ref() {
+            g.lock().set_value(goals.as_bytes()).notify();
+        } else {
+            error!("Goal characteristic has not yet been initialized")
+        }
     }
 }
 
 impl KickerBLE<'_> {
-    fn create_characteristics(&self) {
+    pub fn create_characteristics(&self) -> anyhow::Result<()> {
         let device = BLEDevice::take();
 
         // create characteristics
@@ -102,12 +104,18 @@ impl KickerBLE<'_> {
         mode_descriptor.lock().set_value(b"Operational mode");
 
         let _ = BLEDevice::set_device_name("Goal Counter");
-        device
+        if let Err(err) = device
             .get_advertising()
             .name("Goal server")
             .add_service_uuid(self.config.service_uuid)
             .start()
-            .expect("Could not start advertising on device");
+        {
+            return Err(anyhow!(
+                "Could not start advertising on device, got BLEReturnCode'{err:?}'"
+            ));
+        }
+
+        Ok(())
     }
 }
 
