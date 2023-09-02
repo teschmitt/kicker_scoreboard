@@ -5,10 +5,14 @@ use esp32_nimble::{
     BLECharacteristic, BLEDevice, BLEServer, BLEService, DescriptorProperties, NimbleProperties,
 };
 use log::{debug, error, info};
-use std::sync::Arc;
+use once_cell::sync::Lazy;
+use std::{cell::Cell, sync::Arc};
 
 // Stuff that's missing from original implementation:
 //   * pAdvertising->setMinPreferred(0x06) interval is not set
+
+pub static DEBUG_MODE: Lazy<Arc<Mutex<RawMutex, Cell<bool>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(Cell::new(false))));
 
 pub(crate) trait Server<T> {
     fn new(config: T) -> Self;
@@ -95,7 +99,14 @@ impl KickerBLE<'_> {
                 info!("Got new value for mode_characteristic: '{val}'");
                 if val == "1" || val.to_lowercase() == "true" || val.to_lowercase() == "debug" {
                     // set server into debug mode
+                    // DEBUG_MODE.lock().borrow().set(true);
+                    // Lazy::force(&DEBUG_MODE).lock().set(true);
+                    DEBUG_MODE.lock().set(true);
+                } else {
+                    // Lazy::force(&DEBUG_MODE).lock().set(false);
+                    DEBUG_MODE.lock().set(true);
                 }
+                debug!("New value for DEBUG_MODE: {:?}", DEBUG_MODE.lock().get());
             };
         });
         let mode_descriptor = mode_characteristic

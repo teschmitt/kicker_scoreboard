@@ -6,7 +6,7 @@ use esp_idf_hal::{
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::{error, info};
-use server::{BLEConfig, KickerBLE, Server};
+use server::{BLEConfig, KickerBLE, Server, DEBUG_MODE};
 use std::{thread, time::Duration};
 
 mod server;
@@ -26,8 +26,6 @@ const MODE_CHARACTERISTIC_UUID: BleUuid = uuid128!("a436bad4-7cd6-44da-bf2c-bf00
 // consts for ADC / photoelectric gate
 const THRESHOLD_DETECT_OBJECT: u16 = 50;
 const WAIT_AFTER_DETECTION: Duration = Duration::from_secs(2);
-
-const DEBUG_MODE: bool = true;
 
 fn main() -> anyhow::Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -64,7 +62,7 @@ fn main() -> anyhow::Result<()> {
                 "GOAL! {goals} -- Reading: {read} -- sent to {} connected clients",
                 kicker_server.connected_count()
             );
-            let output_str = if DEBUG_MODE {
+            let output_str = if DEBUG_MODE.lock().get() {
                 format!("{read},{goals}")
             } else {
                 goals.to_string()
