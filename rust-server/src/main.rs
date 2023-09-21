@@ -1,9 +1,5 @@
 use esp32_nimble::{utilities::BleUuid, uuid128};
-use esp_idf_hal::{
-    adc::{config::Config, AdcChannelDriver, AdcDriver, Atten11dB},
-    gpio::*,
-    peripherals::Peripherals,
-};
+use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::{error, info};
 use sensors::SensorArray;
@@ -49,60 +45,52 @@ fn main() -> anyhow::Result<()> {
     // get the peripherals and set them up
     let peripherals = Peripherals::take().unwrap();
 
-    let home = SensorArray::new(
-        "home".to_string(),
-        &mut peripherals.adc1,
-        vec![
-            Box::new(peripherals.pins.gpio32),
-            Box::new(peripherals.pins.gpio32),
-            Box::new(peripherals.pins.gpio32),
-        ],
+    let mut kicker: SensorArray<'_> = SensorArray::new(
+        peripherals.adc1,
+        peripherals.pins.gpio32,
+        peripherals.pins.gpio33,
+        peripherals.pins.gpio34,
+        peripherals.pins.gpio35,
+        peripherals.pins.gpio36,
+        peripherals.pins.gpio37,
         500,
     );
 
-    let mut adc_home = AdcDriver::new(peripherals.adc1, &Config::new().calibration(true))?;
-    let mut adc_away = AdcDriver::new(peripherals.adc2, &Config::new().calibration(true))?;
-    let mut goal_sensor_home: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio32, Atten11dB<_>> =
-        AdcChannelDriver::new(peripherals.pins.gpio32)?;
-    let mut goal_sensor_away: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio33, Atten11dB<_>> =
-        AdcChannelDriver::new(peripherals.pins.gpio33)?;
-
-    // let home = SensorArray::new("home".to_string(), vec![])
-
-    // persistent loop variables
-    let mut goals = 0;
-
     loop {
-        let read_home = adc_home.read(&mut goal_sensor_home)?;
-        let read_away = adc_away.read(&mut goal_sensor_away)?;
+        if kicker.goal_home() {
+        } else if kicker.goal_away() {
+        }
 
-        if read_home > THRESHOLD_DETECT_OBJECT {
-            goals += 1;
-            info!(
-                "GOAL! {goals} -- Reading: {read_home} -- sent to {} connected clients",
-                kicker_server.connected_count()
-            );
-            let output_str = if DEBUG_MODE.lock().get() {
-                format!("{read_home},{goals}")
-            } else {
-                goals.to_string()
-            };
-            kicker_server.send(&output_str);
-            thread::sleep(WAIT_AFTER_DETECTION);
-        };
-        if read_away > THRESHOLD_DETECT_OBJECT {
-            goals += 1;
-            info!(
-                "GOAL! {goals} -- Reading: {read_away} -- sent to {} connected clients",
-                kicker_server.connected_count()
-            );
-            let output_str = if DEBUG_MODE.lock().get() {
-                format!("{read_away},{goals}")
-            } else {
-                goals.to_string()
-            };
-            kicker_server.send(&output_str);
-            thread::sleep(WAIT_AFTER_DETECTION);
-        };
+        // let read_home = adc_home.read(&mut goal_sensor_home)?;
+        // let read_away = adc_away.read(&mut goal_sensor_away)?;
+
+        // if read_home > THRESHOLD_DETECT_OBJECT {
+        //     goals += 1;
+        //     info!(
+        //         "GOAL! {goals} -- Reading: {read_home} -- sent to {} connected clients",
+        //         kicker_server.connected_count()
+        //     );
+        //     let output_str = if DEBUG_MODE.lock().get() {
+        //         format!("{read_home},{goals}")
+        //     } else {
+        //         goals.to_string()
+        //     };
+        //     kicker_server.send(&output_str);
+        //     thread::sleep(WAIT_AFTER_DETECTION);
+        // };
+        // if read_away > THRESHOLD_DETECT_OBJECT {
+        //     goals += 1;
+        //     info!(
+        //         "GOAL! {goals} -- Reading: {read_away} -- sent to {} connected clients",
+        //         kicker_server.connected_count()
+        //     );
+        //     let output_str = if DEBUG_MODE.lock().get() {
+        //         format!("{read_away},{goals}")
+        //     } else {
+        //         goals.to_string()
+        //     };
+        //     kicker_server.send(&output_str);
+        //     thread::sleep(WAIT_AFTER_DETECTION);
+        // };
     }
 }
