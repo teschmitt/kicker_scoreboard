@@ -47,23 +47,42 @@ fn main() -> anyhow::Result<()> {
     // get the peripherals and set them up
     let peripherals = Peripherals::take().unwrap();
 
-    let mut adc = AdcDriver::new(peripherals.adc1, &Config::new().calibration(true))?;
-    let mut goal_sensor: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio32, Atten11dB<_>> =
+    let mut adc_home = AdcDriver::new(peripherals.adc1, &Config::new().calibration(true))?;
+    let mut adc_away = AdcDriver::new(peripherals.adc2, &Config::new().calibration(true))?;
+    let mut goal_sensor_home: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio32, Atten11dB<_>> =
         AdcChannelDriver::new(peripherals.pins.gpio32)?;
+    let mut goal_sensor_away: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio33, Atten11dB<_>> =
+        AdcChannelDriver::new(peripherals.pins.gpio33)?;
 
     // persistent loop variables
     let mut goals = 0;
 
     loop {
-        let read = adc.read(&mut goal_sensor)?;
-        if read > THRESHOLD_DETECT_OBJECT {
+        let read_home = adc_home.read(&mut goal_sensor_home)?;
+        let read_away = adc_away.read(&mut goal_sensor_away)?;
+
+        if read_home > THRESHOLD_DETECT_OBJECT {
             goals += 1;
             info!(
-                "GOAL! {goals} -- Reading: {read} -- sent to {} connected clients",
+                "GOAL! {goals} -- Reading: {read_home} -- sent to {} connected clients",
                 kicker_server.connected_count()
             );
             let output_str = if DEBUG_MODE.lock().get() {
-                format!("{read},{goals}")
+                format!("{read_home},{goals}")
+            } else {
+                goals.to_string()
+            };
+            kicker_server.send(&output_str);
+            thread::sleep(WAIT_AFTER_DETECTION);
+        };
+        if read_away > THRESHOLD_DETECT_OBJECT {
+            goals += 1;
+            info!(
+                "GOAL! {goals} -- Reading: {read_away} -- sent to {} connected clients",
+                kicker_server.connected_count()
+            );
+            let output_str = if DEBUG_MODE.lock().get() {
+                format!("{read_away},{goals}")
             } else {
                 goals.to_string()
             };
