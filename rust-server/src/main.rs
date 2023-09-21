@@ -6,9 +6,11 @@ use esp_idf_hal::{
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::{error, info};
+use sensors::SensorArray;
 use server::{BLEConfig, KickerBLE, Server, DEBUG_MODE};
 use std::{thread, time::Duration};
 
+mod sensors;
 mod server;
 
 /*
@@ -47,12 +49,25 @@ fn main() -> anyhow::Result<()> {
     // get the peripherals and set them up
     let peripherals = Peripherals::take().unwrap();
 
+    let home = SensorArray::new(
+        "home".to_string(),
+        &mut peripherals.adc1,
+        vec![
+            Box::new(peripherals.pins.gpio32),
+            Box::new(peripherals.pins.gpio32),
+            Box::new(peripherals.pins.gpio32),
+        ],
+        500,
+    );
+
     let mut adc_home = AdcDriver::new(peripherals.adc1, &Config::new().calibration(true))?;
     let mut adc_away = AdcDriver::new(peripherals.adc2, &Config::new().calibration(true))?;
     let mut goal_sensor_home: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio32, Atten11dB<_>> =
         AdcChannelDriver::new(peripherals.pins.gpio32)?;
     let mut goal_sensor_away: esp_idf_hal::adc::AdcChannelDriver<'_, Gpio33, Atten11dB<_>> =
         AdcChannelDriver::new(peripherals.pins.gpio33)?;
+
+    // let home = SensorArray::new("home".to_string(), vec![])
 
     // persistent loop variables
     let mut goals = 0;
