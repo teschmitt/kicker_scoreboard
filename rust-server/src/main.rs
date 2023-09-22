@@ -1,5 +1,8 @@
 use esp32_nimble::{utilities::BleUuid, uuid128};
-use esp_idf_hal::peripherals::Peripherals;
+use esp_idf_hal::{
+    gpio::{AnyInputPin, InputPin, Pin},
+    peripherals::Peripherals,
+};
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::{error, info};
 use sensors::SensorArray;
@@ -56,9 +59,16 @@ fn main() -> anyhow::Result<()> {
         500,
     );
 
+    // let x: Vec<Box<dyn AdcPin<Adc = ADC, P = AnyInputPin>>> = vec![
+    //     Box::new(peripherals.pins.gpio38),
+    //     Box::new(peripherals.pins.gpio39),
+    // ];
+
     loop {
         if kicker.goal_home() {
+            thread::sleep(WAIT_AFTER_DETECTION);
         } else if kicker.goal_away() {
+            thread::sleep(WAIT_AFTER_DETECTION);
         }
 
         // let read_home = adc_home.read(&mut goal_sensor_home)?;
