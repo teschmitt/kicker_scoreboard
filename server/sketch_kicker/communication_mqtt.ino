@@ -32,7 +32,7 @@ String clientIP;
 
 
 // Setup mqtt
-IPAddress server(192, 168, 50, 217);
+IPAddress server(0, 0, 0, 0);
 int port = 1883;
 WiFiClient espClient;
 PubSubClient client(espClient);
