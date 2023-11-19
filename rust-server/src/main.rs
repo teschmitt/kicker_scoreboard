@@ -1,11 +1,10 @@
+#![allow(unused_imports, dead_code)]
 use esp32_nimble::{utilities::BleUuid, uuid128};
-use esp_idf_hal::{
-    gpio::{AnyInputPin, InputPin, Pin},
-    peripherals::Peripherals,
-};
+use esp_idf_hal::{adc, peripherals::Peripherals};
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use log::{error, info};
-use sensors::SensorArray;
+// use sensors::{SenArr, SensorArray};
+use crate::sensors::{get_wrapped_pin, IrSensorArray, PinWrapper, UnsizedPin};
 use server::{BLEConfig, KickerBLE, Server, DEBUG_MODE};
 use std::{thread, time::Duration};
 
@@ -48,28 +47,35 @@ fn main() -> anyhow::Result<()> {
     // get the peripherals and set them up
     let peripherals = Peripherals::take().unwrap();
 
-    let mut kicker: SensorArray<'_> = SensorArray::new(
+    let mut adc = Box::new(adc::AdcDriver::new(
         peripherals.adc1,
-        peripherals.pins.gpio32,
-        peripherals.pins.gpio33,
-        peripherals.pins.gpio34,
-        peripherals.pins.gpio35,
-        peripherals.pins.gpio36,
-        peripherals.pins.gpio37,
-        500,
+        &adc::config::Config::new().calibration(true),
+    )?);
+    let sensors_home = IrSensorArray::new(
+        &adc,
+        vec![
+            get_wrapped_pin(peripherals.pins.gpio32),
+            get_wrapped_pin(peripherals.pins.gpio33),
+            get_wrapped_pin(peripherals.pins.gpio34),
+        ],
+        THRESHOLD_DETECT_OBJECT,
+    );
+    let sensors_away = IrSensorArray::new(
+        &adc,
+        vec![
+            get_wrapped_pin(peripherals.pins.gpio35),
+            get_wrapped_pin(peripherals.pins.gpio36),
+            get_wrapped_pin(peripherals.pins.gpio37),
+        ],
+        THRESHOLD_DETECT_OBJECT,
     );
 
-    // let x: Vec<Box<dyn AdcPin<Adc = ADC, P = AnyInputPin>>> = vec![
-    //     Box::new(peripherals.pins.gpio38),
-    //     Box::new(peripherals.pins.gpio39),
-    // ];
-
     loop {
-        if kicker.goal_home() {
-            thread::sleep(WAIT_AFTER_DETECTION);
-        } else if kicker.goal_away() {
-            thread::sleep(WAIT_AFTER_DETECTION);
-        }
+        // if kicker.goal_home() {
+        //     thread::sleep(WAIT_AFTER_DETECTION);
+        // } else if kicker.goal_away() {
+        //     thread::sleep(WAIT_AFTER_DETECTION);
+        // }
 
         // let read_home = adc_home.read(&mut goal_sensor_home)?;
         // let read_away = adc_away.read(&mut goal_sensor_away)?;
